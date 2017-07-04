@@ -1,0 +1,35 @@
+Feature: Tests that the client authentication is correctly setup for a MongoDB installation
+
+  Background:
+    Given "mongo" is installed
+    And the following profile:
+      | name       | value        |
+      | ip         | 10.16.32.25  |
+      | fakeuser   | someusername |
+      | fakepass   | somepassword |
+      | testuser   | test         |
+      | testpass   | test         |
+
+  Scenario: Verify unencrypted, anonymous authentication fails
+    When I try a plaintext anonymous login to server "ip"
+    Then no valid server should be contactable
+
+  Scenario: Verify unencrypted authentication fails for incorrect credentials
+    When I try a plaintext login to server "ip" with username "fakeuser" and password "fakepass"
+    Then no valid server should be contactable
+
+  Scenario: Verify unencrypted authentication fails for correct credentials
+    When I try a plaintext login to server "ip" with username "testuser" and password "testpass"
+    Then no valid server should be contactable
+
+  Scenario: Verify SSL encrypted, anonymous authentication fails
+    When I try an SSL anonymous login to server "ip"
+    Then the operation should fail
+
+  Scenario: Verify SSL encrypted authentication fails for incorrect credentials
+    When I try an SSL login to server "ip" with username "fakeuser" and password "fakepass"
+    Then the login should be refused as unauthorised
+
+  Scenario: Verify SSL encrypted authentication succeeds for correct (SCRAM-SHA-1) credentials
+    When I try an SSL login to server "ip" with username "testuser" and password "testpass"
+    Then the login should be accepted

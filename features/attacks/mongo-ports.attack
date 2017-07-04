@@ -1,0 +1,34 @@
+Feature: Tests that only required ports are exposed on a MongoDB installation
+
+  Background:
+    Given "nmap" is installed
+    And the following profile:
+      | name     | value       |
+      | ip       | 10.16.32.25 |
+
+  # General check to ensure that no extraneous default ports are open
+  @slow
+  Scenario: Check the only default port that is open is SSH:
+    When I launch an "nmap" attack with:
+      """
+      nmap -T4 <ip>
+      """
+    Then the output should match /22.tcp\s+open/
+    And the output should not match /[0-9]*.udp\s+open/
+
+    # These would be better if it were "filtered" instead of "closed".
+    And the output should match /80.tcp\s+closed/
+    And the output should match /443.tcp\s+closed/
+
+  # Ensure that the MongoDB (mongod & mongos) client port 27017 is open
+  # Ensure that the default sharding ports 27018 & 27019 are not open, as we don't use this
+  @slow
+  Scenario: Check only required MongoDB ports are open:
+    When I launch an "nmap" attack with:
+      """
+      nmap -T4 -p 27017-27019,28017 <ip>
+      """
+    Then the output should match /27017.tcp\s+open/
+    And the output should match /27018.tcp\s+filtered/
+    And the output should match /27019.tcp\s+filtered/
+    And the output should match /28017.tcp\s+filtered/
